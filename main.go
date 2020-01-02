@@ -193,6 +193,9 @@ func main() {
 		fmt.Println(data)
 
 		writer.Write(receitaToCSV(data))
+		if err != nil {
+			log.Println(err)
+		}
 		writer.Flush()
 		if count%3 == 0 {
 			time.Sleep(61 * time.Second)

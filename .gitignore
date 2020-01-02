@@ -13,3 +13,6 @@ receita
 
 # Mac
 .DS_Store
+
+# Editor
+.vscode
