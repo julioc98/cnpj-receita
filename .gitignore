@@ -9,6 +9,7 @@ cnpj*
 # Bin
 *.exe
 sniffer
+receita
 
 # Mac
 .DS_Store
