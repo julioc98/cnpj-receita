@@ -1,7 +1,7 @@
 package main
 
 import (
-        	"encoding/csv"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,15 +14,15 @@ import (
 )
 
 type receita struct {
-	 AtividadePrincipal []struct {
+	AtividadePrincipal []struct {
 		Text string `json:"text"`
-	 }   `json:"atividade_principal"`
+	} `json:"atividade_principal"`
 	DataSituacao          string `json:"data_situacao"`
 	Complemento           string `json:"complemento"`
 	Tipo                  string `json:"tipo"`
 	Nome                  string `json:"nome"`
 	Telefone              string `json:"telefone"`
-        	Email                 string `json:"email"`
+	Email                 string `json:"email"`
 	Situacao              string `json:"situacao"`
 	Bairro                string `json:"bairro"`
 	Logradouro            string `json:"logradouro"`
@@ -45,12 +45,12 @@ type receita struct {
 		Text string `json:"text"`
 	} `json:"atividades_secundarias"`
 	CapitalSocial string `json:"capital_social"`
-	Url           string
+	URL           string
 }
 
-func receitaToCSV (data receita )[]string {
+func receitaToCSV(data receita) []string {
 
-	csv  := []string{
+	csv := []string{
 		data.Cnpj,
 		data.AtividadePrincipal[0].Text,
 		data.Nome,
@@ -97,25 +97,48 @@ func getReceita(cnpj string) (receita, error) {
 	return res, nil
 }
 
+func connected() bool {
+	_, err := http.Get("http://clients3.google.com/generate_204")
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func waitConnect() {
+	if connected() {
+		return
+	}
+	fmt.Println("Wait for internet connection...")
+	for {
+		if connected() {
+			return
+		}
+	}
+}
+
 func main() {
 	fmt.Println("Start")
+	waitConnect()
 
 	exeAbsolutePath, err := osext.ExecutableFolder()
 	if err != nil {
 		log.Fatal(err)
 	}
-	// fmt.Println(exeAbsolutePath)
 
 	// Create a new output file
 	writeFile, err := os.Create(exeAbsolutePath + "/cnpj_out.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer writeFile.Close()
+
 	// Open the file
 	readFile, err := os.Open(exeAbsolutePath + "/cnpj.csv")
 	if err != nil {
 		log.Fatalln("1 - Couldn't open the csv file", err)
 	}
+	defer readFile.Close()
 
 	// Parse the file
 	r := csv.NewReader(readFile)
@@ -146,7 +169,6 @@ func main() {
 			fmt.Println("\nEnd\nPress CTRL + C to EXIT")
 			for {
 			}
-			break
 		}
 		if err != nil {
 			log.Fatal(err)
@@ -158,10 +180,13 @@ func main() {
 			fmt.Printf("%s is not a CNPJ \n", cnpj)
 			continue
 		}
+		waitConnect()
 		fmt.Printf("CNPJ: %s processing...\n", cnpj)
+		waitConnect()
 
 		data, err := getReceita(cnpj)
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 
@@ -169,8 +194,9 @@ func main() {
 
 		writer.Write(receitaToCSV(data))
 		writer.Flush()
-
-		time.Sleep(21 * time.Second)
+		if count%3 == 0 {
+			time.Sleep(61 * time.Second)
+		}
 	}
 
 }
