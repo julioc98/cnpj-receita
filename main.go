@@ -45,7 +45,8 @@ type receita struct {
 		Text string `json:"text"`
 	} `json:"atividades_secundarias"`
 	CapitalSocial string `json:"capital_social"`
-	URL           string
+	URL           string `json:"url"`
+	Message       string `json:"message"`
 }
 
 func receitaToCSV(data receita) []string {
@@ -89,11 +90,23 @@ func getReceita(cnpj string) (receita, error) {
 	if err != nil {
 		return res, err
 	}
+	if resp.StatusCode == 429 {
+		time.Sleep(60 * time.Second)
+		return getReceita(cnpj)
+	}
+	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+		return res, fmt.Errorf("StatusCode ERROR")
+	}
+
 	defer resp.Body.Close()
 	json.NewDecoder(resp.Body).Decode(&res)
 	if err != nil {
 		return res, err
 	}
+	if res.Status != "OK" {
+		return res, fmt.Errorf("Status: %s, Message: %s", res.Status, res.Message)
+	}
+
 	return res, nil
 }
 
@@ -171,7 +184,8 @@ func main() {
 			}
 		}
 		if err != nil {
-			log.Fatal(err)
+			log.Println("ERROR: r.Read() -", err)
+			continue
 		}
 
 		fmt.Printf("\nTurn: %d \n", count)
